@@ -204,3 +204,52 @@ def detect_single_byte_xor(ciphertext_hexs: list, min_score=750):
             max_score = r[0]
             best_result = r
     return best_result
+
+"""
+1.5
+Instructions: https://cryptopals.com/sets/1/challenges/5
+
+Implement repeating-key XOR
+
+Here is the opening stanza of an important work of the English language:
+
+`Burning 'em, if you ain't quick and nimble
+I go crazy when I hear a cymbal`
+
+Encrypt it, under the key "ICE", using repeating-key XOR.
+
+In repeating-key XOR, you'll sequentially apply each byte of the key; the first byte of plaintext will be XOR'd against I, the next C, the next E, then I again for the 4th byte, and so on.
+
+It should come out to:
+
+`0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f`
+
+>>> repeating_key_xor("ICE","Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal")
+0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f
+"""
+def repeating_key_xor(key=None, message=None, hex_output=True):
+
+    if type(key) == bytes:
+        key_bytes = key
+    elif type(key) == str:
+        key_bytes = bytes(key, 'utf-8')
+    else:
+        raise TypeError("Key must be bytes or str")
+
+    if type(message) == bytes:
+        msg_bytes = message
+    elif type(message) == str:
+        msg_bytes = bytes(message, 'utf-8')
+    else:
+        raise TypeError("Message must be bytes or str")
+    
+    key_index = 0
+    res_bytes = bytearray()
+    for msg_byte in msg_bytes:
+        res_bytes.append(key_bytes[key_index] ^ msg_byte)
+        key_index = (key_index + 1) % len(key_bytes)
+    
+    if hex_output:
+        return res_bytes.hex()
+    else:
+        return bytes.fromhex(res_bytes.hex())
