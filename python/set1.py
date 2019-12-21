@@ -1,97 +1,3 @@
-
-#################
-# Utility Classes
-#################
-
-# FrequencyFinder
-# http://inventwithpython.com/hacking (BSD Licensed)
-class FrequencyFinder:
-
-    # frequency taken from http://en.wikipedia.org/wiki/Letter_frequency
-    englishLetterFreq = {'E': 12.70, 'T': 9.06, 'A': 8.17, 'O': 7.51, 'I': 6.97, 'N': 6.75, 'S': 6.33, 'H': 6.09, 'R': 5.99, 'D': 4.25, 'L': 4.03, 'C': 2.78, 'U': 2.76, 'M': 2.41, 'W': 2.36, 'F': 2.23, 'G': 2.02, 'Y': 1.97, 'P': 1.93, 'B': 1.29, 'V': 0.98, 'K': 0.77, 'J': 0.15, 'X': 0.15, 'Q': 0.10, 'Z': 0.07}
-    ETAOIN = 'ETAOINSHRDLCUMWFGYPBVKJXQZ'
-    LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-
-    def getLetterCount(self, message: str):
-        # Returns a dictionary with keys of single letters and values of the
-        # count of how many times they appear in the message parameter.
-        letterCount = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0, 'F': 0, 'G': 0, 'H': 0, 'I': 0, 'J': 0, 'K': 0, 'L': 0, 'M': 0, 'N': 0, 'O': 0, 'P': 0, 'Q': 0, 'R': 0, 'S': 0, 'T': 0, 'U': 0, 'V': 0, 'W': 0, 'X': 0, 'Y': 0, 'Z': 0}
-
-        for letter in message.upper():
-            if letter in self.LETTERS:
-                letterCount[letter] += 1
-
-        return letterCount
-
-
-    def getItemAtIndexZero(self, x):
-        return x[0]
-
-
-    def getFrequencyOrder(self, message: str):
-        # Returns a string of the alphabet letters arranged in order of most
-        # frequently occurring in the message parameter.
-
-        # first, get a dictionary of each letter and its frequency count
-        letterToFreq = self.getLetterCount(message)
-
-        # second, make a dictionary of each frequency count to each letter(s)
-        # with that frequency
-        freqToLetter = {}
-        for letter in self.LETTERS:
-            if letterToFreq[letter] not in freqToLetter:
-                freqToLetter[letterToFreq[letter]] = [letter]
-            else:
-                freqToLetter[letterToFreq[letter]].append(letter)
-
-        # third, put each list of letters in reverse "ETAOIN" order, and then
-        # convert it to a string
-        for freq in freqToLetter:
-            freqToLetter[freq].sort(key=self.ETAOIN.find, reverse=True)
-            freqToLetter[freq] = ''.join(freqToLetter[freq])
-
-        # fourth, convert the freqToLetter dictionary to a list of tuple
-        # pairs (key, value), then sort them
-        freqPairs = list(freqToLetter.items())
-        freqPairs.sort(key=self.getItemAtIndexZero, reverse=True)
-
-        # fifth, now that the letters are ordered by frequency, extract all
-        # the letters for the final string
-        freqOrder = []
-        for freqPair in freqPairs:
-            freqOrder.append(freqPair[1])
-
-        return ''.join(freqOrder)
-
-
-    def englishFreqMatchScore(self, message: str):
-        # Return the number of matches that the string in the message
-        # parameter has when its letter frequency is compared to English
-        # letter frequency. A "match" is how many of its six most frequent
-        # and six least frequent letters is among the six most frequent and
-        # six least frequent letters for English.
-        freqOrder = self.getFrequencyOrder(message)
-
-        matchScore = 1000
-
-        for i in range(len(freqOrder)):
-            letterRankDist = abs(i - self.ETAOIN.index(freqOrder[i]))
-            matchScore -= letterRankDist
-
-        """
-        # Find how many matches for the six most common letters there are.
-        for commonLetter in self.ETAOIN[:6]:
-            if commonLetter in freqOrder[:6]:
-                matchScore += 1
-
-        # Find how many matches for the six least common letters there are.
-        for uncommonLetter in self.ETAOIN[-6:]:
-            if uncommonLetter in freqOrder[-6:]:
-                matchScore += 1
-        """
-        
-        return matchScore
-
 #################
 # Set 1
 #################
@@ -163,17 +69,32 @@ How? Devise some method for "scoring" a piece of English plaintext. Character fr
 >>> brute_single_byte_xor('1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736')
 (_, _, b"Cooking MC's like a pound of bacon")
 """
+
+def get_english_score(input_bytes):
+    """Returns a score which is the sum of the probabilities in how each letter of the input data
+    appears in the English language. Uses the above probabilities.
+    Thanks to: https://github.com/ricpacca
+    """
+    CHARACTER_FREQ = {
+        'a': 0.0651738, 'b': 0.0124248, 'c': 0.0217339, 'd': 0.0349835, 'e': 0.1041442, 'f': 0.0197881, 'g': 0.0158610,
+        'h': 0.0492888, 'i': 0.0558094, 'j': 0.0009033, 'k': 0.0050529, 'l': 0.0331490, 'm': 0.0202124, 'n': 0.0564513,
+        'o': 0.0596302, 'p': 0.0137645, 'q': 0.0008606, 'r': 0.0497563, 's': 0.0515760, 't': 0.0729357, 'u': 0.0225134,
+        'v': 0.0082903, 'w': 0.0171272, 'x': 0.0013692, 'y': 0.0145984, 'z': 0.0007836, ' ': 0.1918182
+    }
+    score = 0
+
+    for byte in input_bytes:
+        score += CHARACTER_FREQ.get(chr(byte).lower(), 0)
+
+    return score
+
 def brute_single_byte_xor(ciphertext_hex: str):
-    ff = FrequencyFinder()
     cipher_bytes = bytes.fromhex(ciphertext_hex)
     best_result = (0, '', '')
     for i in range(256):
         key_bytes = bytes([i] * len(cipher_bytes))
-        try:
-            plaintext = str(bytes.fromhex(fixed_xor(cipher_bytes.hex(), key_bytes.hex())), encoding='utf-8')
-        except UnicodeDecodeError:
-            continue
-        score = ff.englishFreqMatchScore(plaintext)
+        plaintext = bytes.fromhex(fixed_xor(cipher_bytes.hex(), key_bytes.hex()))
+        score = get_english_score(plaintext)
         if best_result[0] < score:
             best_result = (score, bytes([i]).hex(), plaintext)
     return best_result
@@ -253,3 +174,74 @@ def repeating_key_xor(key=None, message=None, hex_output=True):
         return res_bytes.hex()
     else:
         return bytes.fromhex(res_bytes.hex())
+
+"""
+1.6
+Instructions: https://cryptopals.com/sets/1/challenges/6
+
+Whew... That was tough but fun!
+
+"""
+
+def hamming_distance(a, b):
+    if type(a) is str and type(b) is str:
+        a_bytes = bytes(a, 'utf-8')
+        b_bytes = bytes(b, 'utf-8')
+    elif type(a) is bytes and type(b) is bytes:
+        a_bytes = a
+        b_bytes = b
+    else:
+        raise TypeError('Inputs must both be str or both be bytes')
+
+    if (len(a_bytes) != len(b_bytes)):
+        raise ValueError(str)
+
+    ham_dist = 0
+    byte_len = len(a_bytes)
+    for i in range(byte_len):
+        xor_byte = a_bytes[i] ^ b_bytes[i]
+        bits = bin(xor_byte)[2:]
+        ham_dist += len([b for b in bits if b is '1'])
+    return ham_dist
+
+def break_repeating_key_xor(cipherbytes: bytes = None, maxkeysize: int = 40):
+
+    block_count = 4
+    guess_distances = {}
+    maxkeysize = min(maxkeysize, int(len(cipherbytes)/block_count))
+    print("Guessing key size using hamming distances...")
+    for keysize_guess in range(2,maxkeysize + 1):
+        #print('Key length guess: ' + str(keysize_guess))
+
+        blocks = [cipherbytes[i:i + keysize_guess] for i in range(0, len(cipherbytes), keysize_guess)][:block_count]
+        block_distances = []
+
+        for i in range(block_count):
+            for j in range(i+1, block_count):
+                hd = hamming_distance(blocks[i], blocks[j])
+                block_distances.append(hd)
+                #print(blocks[i].hex() + '|' + blocks[j].hex() + '|' + str(hd))
+
+        guess_distances[keysize_guess] = (sum(block_distances) / len(block_distances)) / keysize_guess
+
+    #print(guess_distances)
+
+    best_keysizes = sorted(guess_distances, key=guess_distances.get)[:5]
+    message_guesses = []
+    for best_keysize in best_keysizes:
+        print('Trying best key length: ' + str(best_keysize))
+
+        cipher_blocks = [cipherbytes[i*best_keysize:(i+1)*best_keysize] for i in range(int(len(cipherbytes)/best_keysize))]
+        transposed_blocks = [bytes([b[i] for b in cipher_blocks]) for i in range(best_keysize)]
+
+        key = []
+        for t_block in transposed_blocks:
+            res = brute_single_byte_xor(t_block.hex())
+            key.append(str(bytes.fromhex(res[1]), encoding='utf-8'))
+        print('Possible key: ' + str(key))
+
+        message_bytes = repeating_key_xor(key=''.join(key), message=str(cipherbytes, encoding='utf-8'), hex_output=False)
+        message_guesses.append(message_bytes)
+    
+    best_message = max(message_guesses, key=lambda k: get_english_score(k))
+    return str(best_message, encoding='utf-8')
