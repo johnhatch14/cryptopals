@@ -245,3 +245,45 @@ def break_repeating_key_xor(cipherbytes: bytes = None, maxkeysize: int = 40):
     
     best_message = max(message_guesses, key=lambda k: get_english_score(k))
     return str(best_message, encoding='utf-8')
+
+"""
+1.7
+Instructions: https://cryptopals.com/sets/1/challenges/7
+
+"""
+def aes_ecb_decrypt(key:bytes=None, cipherbytes:bytes=None):
+    from Crypto.Cipher import AES
+    aes = AES.new(key=key)
+    aes.mode = AES.MODE_ECB
+    return aes.decrypt(cipherbytes)
+
+"""
+1.8
+Instructions: https://cryptopals.com/sets/1/challenges/8
+
+Detect AES in ECB mode
+"""
+def detect_aes_ecb(ciphertexts:list=None):
+    index_scores = {}
+    key_size = 16
+    for k in range(len(ciphertexts)):
+
+        ciphertext = bytes(ciphertexts[k])
+        blocks = [bytes(ciphertext[i:i+key_size]) for i in range(0, len(ciphertext), key_size)]
+        
+        distances = []
+        for i in range(len(blocks)):
+            for j in range(i, len(blocks)):
+                distances.append(hamming_distance(blocks[i], blocks[j]))
+
+        index_scores[k] = (sum(distances) / len(distances)) / key_size
+
+    best_scores = sorted(index_scores, key=index_scores.get)[:3]
+    res = [(s, index_scores[s]) for s in best_scores]
+    print("Best scores: " + str(res))
+    return ciphertexts[best_scores[0]]
+
+with open('8.txt') as input_file:
+    lines = input_file.readlines()
+    ciphertexts = [bytes.fromhex(l) for l in lines]
+    print(detect_aes_ecb(ciphertexts).hex())
